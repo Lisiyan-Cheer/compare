@@ -299,6 +299,7 @@
 <div class="foot">
   <button class="ft-btn" id="btnUndo" disabled>撤销</button>
   <button class="ft-btn" id="btnRedo" disabled>重做</button>
+  <button class="ft-btn" id="btnPaste">粘贴</button>
   <button class="ft-btn" id="gearBtn">设置</button>
   <span class="info" id="info">共 0 字</span>
   <button class="ft-btn" id="btnClearA">清空A</button>
@@ -375,6 +376,55 @@ btnRedo.addEventListener('click', function(e) {
     updateCounts();
     autosave();
   }
+});
+
+// ===== 粘贴（mousedown 阻止抢焦点，光标不丢） =====
+var btnPaste = document.getElementById('btnPaste');
+btnPaste.addEventListener('mousedown', function(e) {
+  e.preventDefault(); // 关键：不让按钮抢走编辑区的焦点
+  if (!activeEditor) return;
+  var editor = activeEditor;
+
+  // 插入到光标位置
+  function insert(text) {
+    if (!text || !text.trim()) return;
+    var paras = text.split(/\n\s*\n/);
+    var html = paras.map(function(p) {
+      p = p.replace(/\n/g, '<br>');
+      return '<p>' + (p.trim() || '<br>') + '</p>';
+    }).join('');
+    document.execCommand('insertHTML', false, html);
+    updateCounts();
+    autosave();
+  }
+
+  navigator.clipboard.readText().then(function(text) {
+    insert(text);
+  }).catch(function() {
+    // Fallback：隐藏元素触发原生 paste 事件
+    var ta = document.createElement('div');
+    ta.contentEditable = 'true';
+    ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none;';
+    document.body.appendChild(ta);
+    ta.focus();
+
+    var done = false;
+    function cleanup(t) {
+      if (done) return;
+      done = true;
+      if (document.body.contains(ta)) document.body.removeChild(ta);
+      editor.focus();
+      if (t && t.trim()) insert(t);
+    }
+
+    ta.addEventListener('paste', function(ev) {
+      var t = (ev.clipboardData || window.clipboardData).getData('text/plain');
+      cleanup(t);
+    }, {once: true});
+
+    document.execCommand('paste');
+    setTimeout(function() { cleanup(''); }, 400);
+  });
 });
 
 // ===== 设置面板折叠 =====
