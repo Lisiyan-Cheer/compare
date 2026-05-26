@@ -51,32 +51,41 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     height: 40px;
-    padding: 0 14px;
-    padding-left: max(14px, env(safe-area-inset-left));
-    padding-right: max(14px, env(safe-area-inset-right));
+    padding: 0 10px;
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
     background: #fafaf8;
     border-bottom: 1px solid #eee;
-    gap: 8px;
+    gap: 4px;
   }
-  .topbar .gear-btn {
-    height: 30px;
-    width: 30px;
+  .topbar .tb-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .topbar .tb-btn {
+    height: 32px;
+    min-width: 32px;
+    padding: 0 8px;
     border: none;
     border-radius: 6px;
     background: transparent;
-    color: #bbb;
-    font-size: 18px;
+    color: #aaa;
+    font-size: 13px;
     cursor: pointer;
     -webkit-appearance: none;
     touch-action: manipulation;
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 2px;
   }
-  .topbar .gear-btn:active { background: #eee; }
-  .topbar .gear-btn.open { color: #d97706; }
+  .topbar .tb-btn:active { background: #eee; color: #666; }
+  .topbar .tb-btn:disabled { color: #e0e0e0; pointer-events: none; }
+  .topbar .tb-btn.icon-only { font-size: 16px; min-width: 32px; padding: 0; }
+  .topbar .tb-btn.open { color: #d97706; }
 
   /* ===== 调节面板（默认隐藏） ===== */
   .tuner-panel {
@@ -271,7 +280,11 @@
 <div class="pull-indicator" id="pullIndicator">下拉刷新</div>
 
 <div class="topbar" id="topbar">
-  <button class="gear-btn" id="gearBtn" title="设置">⚙</button>
+  <div class="tb-group">
+    <button class="tb-btn" id="btnUndo" disabled title="撤销">↩</button>
+    <button class="tb-btn" id="btnRedo" disabled title="重做">↪</button>
+  </div>
+  <button class="tb-btn icon-only" id="gearBtn" title="设置">⚙</button>
 </div>
 
 <div class="tuner-panel" id="tunerPanel">
@@ -340,6 +353,61 @@ var slPs = document.getElementById('slPs');
 var valFs = document.getElementById('valFs');
 var valLh = document.getElementById('valLh');
 var valPs = document.getElementById('valPs');
+
+// ===== 撤销/重做 =====
+var activeEditor = null;
+var btnUndo = document.getElementById('btnUndo');
+var btnRedo = document.getElementById('btnRedo');
+
+function updateUndoRedo() {
+  if (!activeEditor) { btnUndo.disabled = true; btnRedo.disabled = true; return; }
+  // 用 execCommand 尝试，浏览器自己维护状态
+  btnUndo.disabled = false;
+  btnRedo.disabled = false;
+}
+
+edA.addEventListener('focus', function() {
+  activeEditor = edA;
+  panelA.style.boxShadow = 'inset 2px 0 0 #d97706';
+  panelB.style.boxShadow = 'none';
+  updateUndoRedo();
+});
+edB.addEventListener('focus', function() {
+  activeEditor = edB;
+  panelB.style.boxShadow = 'inset -2px 0 0 #d97706';
+  panelA.style.boxShadow = 'none';
+  updateUndoRedo();
+});
+
+// 点空白处取消焦点
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.content')) {
+    activeEditor = null;
+    panelA.style.boxShadow = 'none';
+    panelB.style.boxShadow = 'none';
+    btnUndo.disabled = true;
+    btnRedo.disabled = true;
+  }
+});
+
+btnUndo.addEventListener('click', function(e) {
+  e.preventDefault();
+  if (activeEditor) {
+    activeEditor.focus();
+    document.execCommand('undo');
+    updateCounts();
+    autosave();
+  }
+});
+btnRedo.addEventListener('click', function(e) {
+  e.preventDefault();
+  if (activeEditor) {
+    activeEditor.focus();
+    document.execCommand('redo');
+    updateCounts();
+    autosave();
+  }
+});
 
 // ===== 设置面板折叠 =====
 var tunerOpen = false;
