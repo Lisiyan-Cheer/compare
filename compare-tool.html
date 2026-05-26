@@ -287,10 +287,14 @@
 
 <div class="topbar" id="topbar">
   <div class="tb-group">
-    <button class="tb-btn" id="btnUndo" disabled title="撤销">↩</button>
-    <button class="tb-btn" id="btnRedo" disabled title="重做">↪</button>
+    <button class="tb-btn" id="btnUndo" disabled>↩</button>
+    <button class="tb-btn" id="btnRedo" disabled>↪</button>
   </div>
-  <button class="tb-btn icon-only" id="gearBtn" title="设置">⚙</button>
+  <div class="tb-group">
+    <button class="tb-btn" id="btnCopy">复制</button>
+    <button class="tb-btn" id="btnPaste">粘贴</button>
+  </div>
+  <button class="tb-btn icon-only" id="gearBtn">⚙</button>
 </div>
 
 <div class="tuner-panel" id="tunerPanel">
@@ -338,13 +342,9 @@
 </div>
 
 <div class="foot">
-  <button class="ft-btn" id="btnCopyA">复制左侧</button>
-  <button class="ft-btn" id="btnPasteA">粘贴左侧</button>
   <button class="ft-btn" id="btnClearA">清空左侧</button>
   <span class="info" id="info">共 0 字</span>
   <button class="ft-btn" id="btnClearB">清空右侧</button>
-  <button class="ft-btn" id="btnPasteB">粘贴右侧</button>
-  <button class="ft-btn" id="btnCopyB">复制右侧</button>
 </div>
 
 <script>
@@ -419,67 +419,49 @@ btnRedo.addEventListener('click', function(e) {
   }
 });
 
-// ===== 复制 / 粘贴 =====
-function copyPanel(side) {
-  var ed = side === 'A' ? edA : edB;
-  var text = ed.textContent;
-  if (!text.trim()) return;
-  var btn = document.getElementById('btnCopy' + side);
-  var origText = btn.textContent;
-  navigator.clipboard.writeText(text).then(function() {
-    btn.classList.add('copied');
-    btn.textContent = '已复制';
-    setTimeout(function() {
-      btn.classList.remove('copied');
-      btn.textContent = origText;
-    }, 1200);
-  }).catch(function() {
-    // fallback
-    ed.focus();
-    document.execCommand('selectAll');
-    document.execCommand('copy');
-    btn.classList.add('copied');
-    btn.textContent = '已复制';
-    setTimeout(function() {
-      btn.classList.remove('copied');
-      btn.textContent = origText;
-    }, 1200);
-  });
-}
+// ===== 统一复制 / 粘贴 =====
+var btnCopy = document.getElementById('btnCopy');
+var btnPaste = document.getElementById('btnPaste');
 
-function pasteToPanel(side) {
-  var ed = side === 'A' ? edA : edB;
+btnCopy.addEventListener('click', function(e) {
+  e.preventDefault();
+  // 如果有选区，复制选区；否则选中当前编辑区全部后复制
+  var sel = window.getSelection();
+  if (!sel.toString() && activeEditor) {
+    var range = document.createRange();
+    range.selectNodeContents(activeEditor);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+  document.execCommand('copy');
+  if (sel.toString() || activeEditor) {
+    btnCopy.textContent = '已复制';
+    btnCopy.style.color = '#4caf50';
+    setTimeout(function() {
+      btnCopy.textContent = '复制';
+      btnCopy.style.color = '';
+    }, 1200);
+  }
+});
+
+btnPaste.addEventListener('click', function(e) {
+  e.preventDefault();
+  if (!activeEditor) return;
+  activeEditor.focus();
   navigator.clipboard.readText().then(function(text) {
     if (!text.trim()) return;
-    // 按段落拆分后粘贴
     var paras = text.split(/\n\s*\n/);
     var html = paras.map(function(p) {
       p = p.replace(/\n/g, '<br>');
       return '<p>' + (p.trim() || '<br>') + '</p>';
     }).join('');
-    ed.focus();
-    document.execCommand('selectAll');
     document.execCommand('insertHTML', false, html);
     updateCounts();
     autosave();
   }).catch(function() {
-    // fallback: focus + 全选，用户手动粘贴
-    ed.focus();
+    // clipboard API 不可用，选中当前内容方便手动替换
     document.execCommand('selectAll');
   });
-}
-
-document.getElementById('btnCopyA').addEventListener('click', function(e) {
-  e.preventDefault(); copyPanel('A');
-});
-document.getElementById('btnCopyB').addEventListener('click', function(e) {
-  e.preventDefault(); copyPanel('B');
-});
-document.getElementById('btnPasteA').addEventListener('click', function(e) {
-  e.preventDefault(); pasteToPanel('A');
-});
-document.getElementById('btnPasteB').addEventListener('click', function(e) {
-  e.preventDefault(); pasteToPanel('B');
 });
 
 // ===== 设置面板折叠 =====
