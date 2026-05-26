@@ -46,35 +46,6 @@
   .pull-indicator.pulling { height: 44px; }
   .pull-indicator.ready { height: 44px; color: #d97706; }
 
-  /* ===== 顶部栏 ===== */
-  .topbar {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 40px;
-    padding: 0 10px;
-    padding-left: max(10px, env(safe-area-inset-left));
-    padding-right: max(10px, env(safe-area-inset-right));
-    background: #fafaf8;
-    border-bottom: 1px solid #eee;
-    gap: 8px;
-  }
-  .topbar .tb-btn {
-    height: 30px;
-    padding: 0 12px;
-    border: 1px solid #e0e0dc;
-    border-radius: 6px;
-    background: #fff;
-    font-size: 12px;
-    color: #888;
-    cursor: pointer;
-    -webkit-appearance: none;
-    touch-action: manipulation;
-  }
-  .topbar .tb-btn:active { background: #f0f0ec; }
-  .topbar .tb-btn:disabled { color: #ddd; pointer-events: none; }
-  .topbar .tb-btn.open { color: #d97706; border-color: #f0d080; }
 
   /* ===== 调节面板（默认隐藏） ===== */
   .tuner-panel {
@@ -267,7 +238,7 @@
     white-space: nowrap;
   }
   .foot .ft-btn:active { background: #f0f0ec; }
-  .foot .ft-btn.copied { background: #e8f5e9; border-color: #81c784; color: #388e3c; }
+  .foot .ft-btn:disabled { color: #ccc; pointer-events: none; }
   .foot .info {
     font-size: 12px;
     color: #bbb;
@@ -280,13 +251,6 @@
 
 <div class="pull-indicator" id="pullIndicator">下拉刷新</div>
 
-<div class="topbar" id="topbar">
-  <button class="tb-btn" id="btnUndo" disabled>撤销</button>
-  <button class="tb-btn" id="btnRedo" disabled>重做</button>
-  <button class="tb-btn" id="btnCopy">复制</button>
-  <button class="tb-btn" id="btnPaste">粘贴</button>
-  <button class="tb-btn" id="gearBtn">设置</button>
-</div>
 
 <div class="tuner-panel" id="tunerPanel">
   <div class="tuner">
@@ -333,9 +297,12 @@
 </div>
 
 <div class="foot">
-  <button class="ft-btn" id="btnClearA">清空左侧</button>
+  <button class="ft-btn" id="btnUndo" disabled>撤销</button>
+  <button class="ft-btn" id="btnRedo" disabled>重做</button>
+  <button class="ft-btn" id="gearBtn">设置</button>
   <span class="info" id="info">共 0 字</span>
-  <button class="ft-btn" id="btnClearB">清空右侧</button>
+  <button class="ft-btn" id="btnClearA">清空A</button>
+  <button class="ft-btn" id="btnClearB">清空B</button>
 </div>
 
 <script>
@@ -410,93 +377,20 @@ btnRedo.addEventListener('click', function(e) {
   }
 });
 
-// ===== 统一复制 / 粘贴 =====
-var btnCopy = document.getElementById('btnCopy');
-var btnPaste = document.getElementById('btnPaste');
-
-btnCopy.addEventListener('click', function(e) {
-  e.preventDefault();
-  // 如果有选区，复制选区；否则选中当前编辑区全部后复制
-  var sel = window.getSelection();
-  if (!sel.toString() && activeEditor) {
-    var range = document.createRange();
-    range.selectNodeContents(activeEditor);
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
-  document.execCommand('copy');
-  if (sel.toString() || activeEditor) {
-    btnCopy.textContent = '已复制';
-    btnCopy.style.color = '#4caf50';
-    setTimeout(function() {
-      btnCopy.textContent = '复制';
-      btnCopy.style.color = '';
-    }, 1200);
-  }
-});
-
-function doPasteToEditor(ed, text) {
-  var paras = text.split(/\n\s*\n/);
-  var html = paras.map(function(p) {
-    p = p.replace(/\n/g, '<br>');
-    return '<p>' + (p.trim() || '<br>') + '</p>';
-  }).join('');
-  document.execCommand('insertHTML', false, html);
-  updateCounts();
-  autosave();
-}
-
-btnPaste.addEventListener('click', function(e) {
-  e.preventDefault();
-  if (!activeEditor) return;
-  var editor = activeEditor;
-  editor.focus();
-
-  // 尝试 clipboard API
-  navigator.clipboard.readText().then(function(text) {
-    if (text && text.trim()) {
-      doPasteToEditor(editor, text);
-    }
-  }).catch(function() {
-    // Fallback: 用隐藏 textarea 触发原生粘贴
-    var ta = document.createElement('textarea');
-    ta.style.cssText = 'position:fixed;top:0;left:-9999px;opacity:0;';
-    ta.contentEditable = true;
-    document.body.appendChild(ta);
-    ta.focus();
-
-    var pasted = false;
-    ta.addEventListener('paste', function(ev) {
-      pasted = true;
-      var t = (ev.clipboardData || window.clipboardData).getData('text/plain');
-      document.body.removeChild(ta);
-      editor.focus();
-      if (t && t.trim()) {
-        doPasteToEditor(editor, t);
-      }
-    }, {once: true});
-
-    document.execCommand('paste');
-    setTimeout(function() {
-      if (!pasted && document.body.contains(ta)) {
-        document.body.removeChild(ta);
-        editor.focus();
-      }
-    }, 300);
-  });
-});
-
 // ===== 设置面板折叠 =====
 var tunerOpen = false;
-document.getElementById('gearBtn').addEventListener('click', function(e) {
+var gearBtn = document.getElementById('gearBtn');
+gearBtn.addEventListener('click', function(e) {
   e.preventDefault();
   tunerOpen = !tunerOpen;
   if (tunerOpen) {
     document.getElementById('tunerPanel').classList.add('open');
-    this.classList.add('open');
+    gearBtn.style.color = '#d97706';
+    gearBtn.style.borderColor = '#f0d080';
   } else {
     document.getElementById('tunerPanel').classList.remove('open');
-    this.classList.remove('open');
+    gearBtn.style.color = '';
+    gearBtn.style.borderColor = '';
   }
 });
 
