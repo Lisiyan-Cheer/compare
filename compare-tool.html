@@ -460,15 +460,42 @@ btnPaste.addEventListener('click', function(e) {
   if (!activeEditor) return;
   var editor = activeEditor;
   editor.focus();
-  // 选中全部现有内容，方便粘贴后替换
+  // 选中全部内容，粘贴后直接替换
   document.execCommand('selectAll');
-  // execCommand paste 在 iOS 上需要用户手势，这里直接调用
-  var ok = document.execCommand('paste');
-  // 延迟检测是否粘贴成功
-  setTimeout(function() {
-    updateCounts();
-    autosave();
-  }, 150);
+
+  // 尝试 clipboard API
+  navigator.clipboard.readText().then(function(text) {
+    if (text && text.trim()) {
+      doPasteToEditor(editor, text);
+    }
+  }).catch(function() {
+    // Fallback: 用隐藏 textarea 触发原生粘贴
+    var ta = document.createElement('textarea');
+    ta.style.cssText = 'position:fixed;top:0;left:-9999px;opacity:0;';
+    ta.contentEditable = true;
+    document.body.appendChild(ta);
+    ta.focus();
+
+    var pasted = false;
+    ta.addEventListener('paste', function(ev) {
+      pasted = true;
+      var t = (ev.clipboardData || window.clipboardData).getData('text/plain');
+      document.body.removeChild(ta);
+      editor.focus();
+      if (t && t.trim()) {
+        document.execCommand('selectAll');
+        doPasteToEditor(editor, t);
+      }
+    }, {once: true});
+
+    document.execCommand('paste');
+    setTimeout(function() {
+      if (!pasted && document.body.contains(ta)) {
+        document.body.removeChild(ta);
+        editor.focus();
+      }
+    }, 300);
+  });
 });
 
 // ===== 设置面板折叠 =====
