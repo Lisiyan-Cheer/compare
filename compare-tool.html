@@ -51,41 +51,30 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     height: 40px;
     padding: 0 10px;
     padding-left: max(10px, env(safe-area-inset-left));
     padding-right: max(10px, env(safe-area-inset-right));
     background: #fafaf8;
     border-bottom: 1px solid #eee;
-    gap: 4px;
-  }
-  .topbar .tb-group {
-    display: flex;
-    align-items: center;
-    gap: 2px;
+    gap: 8px;
   }
   .topbar .tb-btn {
-    height: 32px;
-    min-width: 32px;
-    padding: 0 8px;
-    border: none;
+    height: 30px;
+    padding: 0 12px;
+    border: 1px solid #e0e0dc;
     border-radius: 6px;
-    background: transparent;
-    color: #aaa;
-    font-size: 13px;
+    background: #fff;
+    font-size: 12px;
+    color: #888;
     cursor: pointer;
     -webkit-appearance: none;
     touch-action: manipulation;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
   }
-  .topbar .tb-btn:active { background: #eee; color: #666; }
-  .topbar .tb-btn:disabled { color: #e0e0e0; pointer-events: none; }
-  .topbar .tb-btn.icon-only { font-size: 16px; min-width: 32px; padding: 0; }
-  .topbar .tb-btn.open { color: #d97706; }
+  .topbar .tb-btn:active { background: #f0f0ec; }
+  .topbar .tb-btn:disabled { color: #ddd; pointer-events: none; }
+  .topbar .tb-btn.open { color: #d97706; border-color: #f0d080; }
 
   /* ===== 调节面板（默认隐藏） ===== */
   .tuner-panel {
@@ -286,15 +275,11 @@
 <div class="pull-indicator" id="pullIndicator">下拉刷新</div>
 
 <div class="topbar" id="topbar">
-  <div class="tb-group">
-    <button class="tb-btn" id="btnUndo" disabled>↩</button>
-    <button class="tb-btn" id="btnRedo" disabled>↪</button>
-  </div>
-  <div class="tb-group">
-    <button class="tb-btn" id="btnCopy">复制</button>
-    <button class="tb-btn" id="btnPaste">粘贴</button>
-  </div>
-  <button class="tb-btn icon-only" id="gearBtn">⚙</button>
+  <button class="tb-btn" id="btnUndo" disabled>撤销</button>
+  <button class="tb-btn" id="btnRedo" disabled>重做</button>
+  <button class="tb-btn" id="btnCopy">复制</button>
+  <button class="tb-btn" id="btnPaste">粘贴</button>
+  <button class="tb-btn" id="gearBtn">设置</button>
 </div>
 
 <div class="tuner-panel" id="tunerPanel">
@@ -322,7 +307,7 @@
     <div class="head">
       <span class="label">版本 A</span>
       <span class="count" id="cntA">0 字</span>
-      <button class="hd-btn" id="btnExpandA" title="展开">⤢</button>
+      <button class="hd-btn" id="btnExpandA" title="展开">□</button>
     </div>
     <div class="editor">
       <div class="content" id="edA" contenteditable="true"></div>
@@ -545,21 +530,21 @@ function expand(side) {
     main.classList.remove('expanded');
     panelA.classList.remove('active');
     panelB.classList.remove('active');
-    document.getElementById('btnExpandA').textContent = '⤢';
-    document.getElementById('btnExpandB').textContent = '⤢';
+    document.getElementById('btnExpandA').textContent = '□';
+    document.getElementById('btnExpandB').textContent = '□';
   } else {
     expanded = side;
     main.classList.add('expanded');
     if (side === 'A') {
       panelA.classList.add('active');
       panelB.classList.remove('active');
-      document.getElementById('btnExpandA').textContent = '⤓';
-      document.getElementById('btnExpandB').textContent = '⤢';
+      document.getElementById('btnExpandA').textContent = '×';
+      document.getElementById('btnExpandB').textContent = '□';
     } else {
       panelB.classList.add('active');
       panelA.classList.remove('active');
-      document.getElementById('btnExpandB').textContent = '⤓';
-      document.getElementById('btnExpandA').textContent = '⤢';
+      document.getElementById('btnExpandB').textContent = '×';
+      document.getElementById('btnExpandA').textContent = '□';
     }
   }
 }
