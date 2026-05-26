@@ -249,32 +249,35 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 24px;
+    gap: 6px;
     height: 48px;
-    padding: 0 16px;
-    padding-left: max(16px, env(safe-area-inset-left));
-    padding-right: max(16px, env(safe-area-inset-right));
+    padding: 0 8px;
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
     background: #fafaf8;
     border-top: 1px solid #eee;
+    flex-wrap: wrap;
   }
-  .foot .clear-btn {
-    height: 34px;
-    padding: 0 20px;
+  .foot .ft-btn {
+    height: 32px;
+    padding: 0 10px;
     border: 1px solid #e0e0dc;
     border-radius: 6px;
     background: #fff;
-    font-size: 14px;
+    font-size: 12px;
     color: #777;
     cursor: pointer;
     -webkit-appearance: none;
     touch-action: manipulation;
+    white-space: nowrap;
   }
-  .foot .clear-btn:active { background: #f0f0ec; }
+  .foot .ft-btn:active { background: #f0f0ec; }
+  .foot .ft-btn.copied { background: #e8f5e9; border-color: #81c784; color: #388e3c; }
   .foot .info {
     font-size: 12px;
     color: #bbb;
-    min-width: 60px;
     text-align: center;
+    flex-shrink: 0;
   }
 </style>
 </head>
@@ -315,8 +318,6 @@
     <div class="head">
       <span class="label">版本 A</span>
       <span class="count" id="cntA">0 字</span>
-      <button class="hd-btn" id="btnCopyA" title="复制">📋</button>
-      <button class="hd-btn" id="btnPasteA" title="粘贴">📥</button>
       <button class="hd-btn" id="btnExpandA" title="展开">⤢</button>
     </div>
     <div class="editor">
@@ -328,8 +329,6 @@
     <div class="head">
       <span class="label">版本 B</span>
       <span class="count" id="cntB">0 字</span>
-      <button class="hd-btn" id="btnCopyB" title="复制">📋</button>
-      <button class="hd-btn" id="btnPasteB" title="粘贴">📥</button>
       <button class="hd-btn" id="btnExpandB" title="展开">⤢</button>
     </div>
     <div class="editor">
@@ -339,9 +338,13 @@
 </div>
 
 <div class="foot">
-  <button class="clear-btn" id="btnClearA">清空左侧</button>
+  <button class="ft-btn" id="btnCopyA">复制左侧</button>
+  <button class="ft-btn" id="btnPasteA">粘贴左侧</button>
+  <button class="ft-btn" id="btnClearA">清空左侧</button>
   <span class="info" id="info">共 0 字</span>
-  <button class="clear-btn" id="btnClearB">清空右侧</button>
+  <button class="ft-btn" id="btnClearB">清空右侧</button>
+  <button class="ft-btn" id="btnPasteB">粘贴右侧</button>
+  <button class="ft-btn" id="btnCopyB">复制右侧</button>
 </div>
 
 <script>
@@ -422,12 +425,13 @@ function copyPanel(side) {
   var text = ed.textContent;
   if (!text.trim()) return;
   var btn = document.getElementById('btnCopy' + side);
+  var origText = btn.textContent;
   navigator.clipboard.writeText(text).then(function() {
     btn.classList.add('copied');
-    btn.textContent = '✓';
+    btn.textContent = '已复制';
     setTimeout(function() {
       btn.classList.remove('copied');
-      btn.textContent = '📋';
+      btn.textContent = origText;
     }, 1200);
   }).catch(function() {
     // fallback
@@ -435,10 +439,10 @@ function copyPanel(side) {
     document.execCommand('selectAll');
     document.execCommand('copy');
     btn.classList.add('copied');
-    btn.textContent = '✓';
+    btn.textContent = '已复制';
     setTimeout(function() {
       btn.classList.remove('copied');
-      btn.textContent = '📋';
+      btn.textContent = origText;
     }, 1200);
   });
 }
