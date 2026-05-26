@@ -54,11 +54,11 @@
     overflow: hidden;
     transition: max-height 0.3s ease;
     background: #f5f5f2;
-    border-bottom: 1px solid transparent;
+    border-top: 1px solid transparent;
   }
   .tuner-panel.open {
     max-height: 80px;
-    border-bottom-color: #eee;
+    border-top-color: #eee;
   }
   .tuner {
     display: flex;
@@ -251,27 +251,6 @@
 
 <div class="pull-indicator" id="pullIndicator">下拉刷新</div>
 
-
-<div class="tuner-panel" id="tunerPanel">
-  <div class="tuner">
-    <div class="param">
-      <span class="name">字号</span>
-      <input type="range" id="slFs" min="13" max="26" value="17" step="1">
-      <span class="val" id="valFs">17px</span>
-    </div>
-    <div class="param">
-      <span class="name">行距</span>
-      <input type="range" id="slLh" min="14" max="26" value="18" step="1">
-      <span class="val" id="valLh">1.8</span>
-    </div>
-    <div class="param">
-      <span class="name">段距</span>
-      <input type="range" id="slPs" min="0" max="15" value="5" step="1">
-      <span class="val" id="valPs">0.5em</span>
-    </div>
-  </div>
-</div>
-
 <div class="main" id="main">
   <div class="panel" id="panelA">
     <div class="head">
@@ -292,6 +271,28 @@
     </div>
     <div class="editor">
       <div class="content" id="edB" contenteditable="true"></div>
+    </div>
+  </div>
+</div>
+
+
+
+<div class="tuner-panel" id="tunerPanel">
+  <div class="tuner">
+    <div class="param">
+      <span class="name">字号</span>
+      <input type="range" id="slFs" min="13" max="26" value="17" step="1">
+      <span class="val" id="valFs">17px</span>
+    </div>
+    <div class="param">
+      <span class="name">行距</span>
+      <input type="range" id="slLh" min="14" max="26" value="18" step="1">
+      <span class="val" id="valLh">1.8</span>
+    </div>
+    <div class="param">
+      <span class="name">段距</span>
+      <input type="range" id="slPs" min="0" max="15" value="5" step="1">
+      <span class="val" id="valPs">0.5em</span>
     </div>
   </div>
 </div>
