@@ -460,8 +460,6 @@ btnPaste.addEventListener('click', function(e) {
   if (!activeEditor) return;
   var editor = activeEditor;
   editor.focus();
-  // 选中全部内容，粘贴后直接替换
-  document.execCommand('selectAll');
 
   // 尝试 clipboard API
   navigator.clipboard.readText().then(function(text) {
@@ -483,7 +481,6 @@ btnPaste.addEventListener('click', function(e) {
       document.body.removeChild(ta);
       editor.focus();
       if (t && t.trim()) {
-        document.execCommand('selectAll');
         doPasteToEditor(editor, t);
       }
     }, {once: true});
