@@ -171,22 +171,23 @@
     align-items: center;
     justify-content: space-between;
     height: 40px;
-    padding: 0 10px 0 14px;
+    padding: 0 6px 0 10px;
     background: #fafaf8;
     border-bottom: 1px solid #eee;
-    gap: 8px;
+    gap: 4px;
   }
-  .head .label { font-size: 13px; font-weight: 500; color: #999; }
+  .head .label { font-size: 13px; font-weight: 500; color: #999; margin-right: auto; }
   .head .count { font-size: 12px; color: #bbb; }
 
-  .head .expand-btn {
+  .head .hd-btn {
     height: 30px;
-    width: 30px;
+    min-width: 30px;
+    padding: 0 6px;
     border: none;
     border-radius: 6px;
     background: transparent;
     color: #bbb;
-    font-size: 16px;
+    font-size: 14px;
     cursor: pointer;
     -webkit-appearance: none;
     touch-action: manipulation;
@@ -194,8 +195,10 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    gap: 2px;
   }
-  .head .expand-btn:active { background: #eee; color: #888; }
+  .head .hd-btn:active { background: #eee; color: #888; }
+  .head .hd-btn.copied { color: #4caf50; }
 
   .main.expanded .panel { display: none; }
   .main.expanded .panel.active {
@@ -312,7 +315,9 @@
     <div class="head">
       <span class="label">版本 A</span>
       <span class="count" id="cntA">0 字</span>
-      <button class="expand-btn" id="btnExpandA" title="展开全屏">⤢</button>
+      <button class="hd-btn" id="btnCopyA" title="复制">📋</button>
+      <button class="hd-btn" id="btnPasteA" title="粘贴">📥</button>
+      <button class="hd-btn" id="btnExpandA" title="展开">⤢</button>
     </div>
     <div class="editor">
       <div class="content" id="edA" contenteditable="true"></div>
@@ -323,7 +328,9 @@
     <div class="head">
       <span class="label">版本 B</span>
       <span class="count" id="cntB">0 字</span>
-      <button class="expand-btn" id="btnExpandB" title="展开全屏">⤢</button>
+      <button class="hd-btn" id="btnCopyB" title="复制">📋</button>
+      <button class="hd-btn" id="btnPasteB" title="粘贴">📥</button>
+      <button class="hd-btn" id="btnExpandB" title="展开">⤢</button>
     </div>
     <div class="editor">
       <div class="content" id="edB" contenteditable="true"></div>
@@ -407,6 +414,68 @@ btnRedo.addEventListener('click', function(e) {
     updateCounts();
     autosave();
   }
+});
+
+// ===== 复制 / 粘贴 =====
+function copyPanel(side) {
+  var ed = side === 'A' ? edA : edB;
+  var text = ed.textContent;
+  if (!text.trim()) return;
+  var btn = document.getElementById('btnCopy' + side);
+  navigator.clipboard.writeText(text).then(function() {
+    btn.classList.add('copied');
+    btn.textContent = '✓';
+    setTimeout(function() {
+      btn.classList.remove('copied');
+      btn.textContent = '📋';
+    }, 1200);
+  }).catch(function() {
+    // fallback
+    ed.focus();
+    document.execCommand('selectAll');
+    document.execCommand('copy');
+    btn.classList.add('copied');
+    btn.textContent = '✓';
+    setTimeout(function() {
+      btn.classList.remove('copied');
+      btn.textContent = '📋';
+    }, 1200);
+  });
+}
+
+function pasteToPanel(side) {
+  var ed = side === 'A' ? edA : edB;
+  navigator.clipboard.readText().then(function(text) {
+    if (!text.trim()) return;
+    // 按段落拆分后粘贴
+    var paras = text.split(/\n\s*\n/);
+    var html = paras.map(function(p) {
+      p = p.replace(/\n/g, '<br>');
+      return '<p>' + (p.trim() || '<br>') + '</p>';
+    }).join('');
+    ed.focus();
+    document.execCommand('selectAll');
+    document.execCommand('insertHTML', false, html);
+    updateCounts();
+    autosave();
+  }).catch(function() {
+    // fallback: focus + 全选，用户手动粘贴
+    ed.focus();
+    document.execCommand('selectAll');
+  });
+}
+
+document.getElementById('btnCopyA').addEventListener('click', function(e) {
+  e.preventDefault(); copyPanel('A');
+});
+document.getElementById('btnCopyB').addEventListener('click', function(e) {
+  e.preventDefault(); copyPanel('B');
+});
+document.getElementById('btnPasteA').addEventListener('click', function(e) {
+  e.preventDefault(); pasteToPanel('A');
+});
+document.getElementById('btnPasteB').addEventListener('click', function(e) {
+  e.preventDefault(); pasteToPanel('B');
 });
 
 // ===== 设置面板折叠 =====
