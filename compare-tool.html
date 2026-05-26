@@ -444,7 +444,7 @@ btnCopy.addEventListener('click', function(e) {
   }
 });
 
-function doPasteToEditor(text) {
+function doPasteToEditor(ed, text) {
   var paras = text.split(/\n\s*\n/);
   var html = paras.map(function(p) {
     p = p.replace(/\n/g, '<br>');
@@ -458,15 +458,14 @@ function doPasteToEditor(text) {
 btnPaste.addEventListener('click', function(e) {
   e.preventDefault();
   if (!activeEditor) return;
-  activeEditor.focus();
+  var editor = activeEditor; // 捕获引用，防止后续被清空
+  editor.focus();
 
-  // 方案1：尝试 clipboard API（HTTPS + 用户手势下可用）
   navigator.clipboard.readText().then(function(text) {
     if (text && text.trim()) {
-      doPasteToEditor(text);
+      doPasteToEditor(editor, text);
     }
   }).catch(function() {
-    // 方案2：通过隐藏 textarea 触发原生粘贴
     var ta = document.createElement('textarea');
     ta.style.cssText = 'position:fixed;top:0;left:-9999px;opacity:0;';
     ta.contentEditable = true;
@@ -478,16 +477,15 @@ btnPaste.addEventListener('click', function(e) {
       pasted = true;
       var t = (ev.clipboardData || window.clipboardData).getData('text/plain');
       document.body.removeChild(ta);
-      activeEditor.focus();
-      if (t && t.trim()) doPasteToEditor(t);
+      editor.focus();
+      if (t && t.trim()) doPasteToEditor(editor, t);
     });
 
     document.execCommand('paste');
-    // 如果 200ms 后没触发 paste 事件，说明彻底失败了
     setTimeout(function() {
       if (!pasted && document.body.contains(ta)) {
         document.body.removeChild(ta);
-        activeEditor.focus();
+        editor.focus();
         document.execCommand('selectAll');
       }
     }, 200);
