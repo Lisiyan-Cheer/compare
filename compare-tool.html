@@ -31,6 +31,22 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 
+  /* ===== 下拉刷新指示器 ===== */
+  .pull-indicator {
+    flex-shrink: 0;
+    height: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f5f2;
+    transition: height 0.2s;
+    font-size: 11px;
+    color: #bbb;
+  }
+  .pull-indicator.pulling { height: 40px; }
+  .pull-indicator.ready { height: 40px; color: #d97706; }
+
   /* ===== 调节栏 ===== */
   .tuner {
     flex-shrink: 0;
@@ -210,6 +226,8 @@
 </style>
 </head>
 <body>
+
+<div class="pull-indicator" id="pullIndicator">下拉刷新</div>
 
 <div class="tuner">
   <div class="param">
@@ -424,6 +442,46 @@ document.getElementById('btnClearA').onclick = function() {
 document.getElementById('btnClearB').onclick = function() {
   edB.innerHTML = ''; updateCounts(); localStorage.setItem('cmp_b', '');
 };
+
+// ===== 下拉刷新 =====
+var pullEl = document.getElementById('pullIndicator');
+var pulling = false;
+var startY = 0;
+var pullDist = 0;
+
+document.body.addEventListener('touchstart', function(e) {
+  if (e.target.closest('.editor') || e.target.closest('input')) return;
+  startY = e.touches[0].clientY;
+  pulling = true;
+}, {passive: false});
+
+document.body.addEventListener('touchmove', function(e) {
+  if (!pulling) return;
+  pullDist = e.touches[0].clientY - startY;
+  if (pullDist > 20) {
+    pullEl.classList.add('pulling');
+    if (pullDist > 60) {
+      pullEl.classList.add('ready');
+      pullEl.textContent = '松开刷新';
+    } else {
+      pullEl.classList.remove('ready');
+      pullEl.textContent = '下拉刷新';
+    }
+  }
+}, {passive: false});
+
+document.body.addEventListener('touchend', function() {
+  if (!pulling) return;
+  pulling = false;
+  if (pullDist > 60) {
+    localStorage.setItem('cmp_a', edA.innerHTML);
+    localStorage.setItem('cmp_b', edB.innerHTML);
+    window.location.reload();
+  }
+  pullDist = 0;
+  pullEl.classList.remove('pulling', 'ready');
+  pullEl.textContent = '下拉刷新';
+});
 </script>
 
 </body>
