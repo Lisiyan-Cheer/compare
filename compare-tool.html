@@ -47,7 +47,164 @@
   .pull-indicator.ready { height: 44px; color: #d97706; }
 
 
-  /* ===== 调节面板（默认隐藏） ===== */
+  
+  /* ===== 章节目录条 ===== */
+  .chapter-bar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    height: 36px;
+    padding: 0 8px;
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
+    background: #fafaf8;
+    border-bottom: 1px solid #eee;
+    gap: 6px;
+  }
+  .chapter-bar .ch-btn {
+    width: 30px;
+    height: 26px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    font-size: 15px;
+    color: #888;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    -webkit-appearance: none;
+    touch-action: manipulation;
+    flex-shrink: 0;
+  }
+  .chapter-bar .ch-btn:active { background: #eee; }
+  .chapter-bar .ch-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    color: #555;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chapter-bar .ch-info {
+    font-size: 11px;
+    color: #bbb;
+    flex-shrink: 0;
+  }
+
+  /* ===== 章节抽屉 ===== */
+  .drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .drawer-overlay.open { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 75vw;
+    max-width: 300px;
+    background: #fefefc;
+    z-index: 101;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    padding-top: env(safe-area-inset-top);
+    box-shadow: 2px 0 12px rgba(0,0,0,0.1);
+  }
+  .drawer.open { transform: translateX(0); }
+  .drawer .dr-head {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 44px;
+    padding: 0 14px;
+    border-bottom: 1px solid #eee;
+  }
+  .drawer .dr-head .dr-title { font-size: 14px; font-weight: 500; color: #555; }
+  .drawer .dr-head .dr-close {
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    font-size: 18px;
+    color: #aaa;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .drawer .dr-head .dr-close:active { background: #eee; }
+  .drawer .dr-list {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 8px 0;
+  }
+  .drawer .dr-item {
+    display: flex;
+    align-items: center;
+    height: 44px;
+    padding: 0 14px;
+    gap: 8px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .drawer .dr-item:active { background: #f5f5f2; }
+  .drawer .dr-item.current { background: #faf6f0; }
+  .drawer .dr-item.current .dr-item-name { color: #d97706; font-weight: 500; }
+  .drawer .dr-item .dr-item-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .drawer .dr-item .dr-item-del {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    font-size: 14px;
+    color: #ccc;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .drawer .dr-item .dr-item-del:active { background: #fee; color: #e55; }
+  .drawer .dr-add {
+    flex-shrink: 0;
+    height: 44px;
+    border: none;
+    border-top: 1px solid #eee;
+    background: #fafaf8;
+    font-size: 14px;
+    color: #d97706;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .drawer .dr-add:active { background: #f5f5f2; }
+
+/* ===== 调节面板（默认隐藏） ===== */
   .tuner-panel {
     flex-shrink: 0;
     max-height: 0;
@@ -251,6 +408,13 @@
 
 <div class="pull-indicator" id="pullIndicator">下拉刷新</div>
 
+
+<div class="chapter-bar">
+  <button class="ch-btn" id="btnChMenu">☰</button>
+  <span class="ch-name" id="chName">第一章</span>
+  <span class="ch-info" id="chInfo">1/1</span>
+</div>
+
 <div class="main" id="main">
   <div class="panel" id="panelA">
     <div class="head">
@@ -306,6 +470,16 @@
   <button class="ft-btn" id="btnClearA">清空A</button>
   <button class="ft-btn" id="btnClearB">清空B</button>
 </div>
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<div class="drawer" id="drawer">
+  <div class="dr-head">
+    <span class="dr-title">章节</span>
+    <button class="dr-close" id="btnDrClose">✕</button>
+  </div>
+  <div class="dr-list" id="drList"></div>
+  <button class="dr-add" id="btnDrAdd">＋ 新建章节</button>
+</div>
+
 
 <script>
 var edA = document.getElementById('edA');
@@ -565,35 +739,187 @@ function cleanPaste(el, e) {
 edA.addEventListener('paste', function(e) { cleanPaste(edA, e); });
 edB.addEventListener('paste', function(e) { cleanPaste(edB, e); });
 
+// ===== 章节管理 =====
+var chapters = [];
+var curChapter = 0;
+
+function loadChapters() {
+  try {
+    var raw = localStorage.getItem('cmp_chapters');
+    if (raw) {
+      chapters = JSON.parse(raw);
+    } else {
+      // 迁移旧数据
+      var oldA = localStorage.getItem('cmp_a');
+      var oldB = localStorage.getItem('cmp_b');
+      if (oldA || oldB) {
+        chapters = [{name: '第一章', a: oldA || '', b: oldB || ''}];
+      } else {
+        chapters = [{name: '第一章', a: '', b: ''}];
+      }
+      saveChapters();
+      localStorage.removeItem('cmp_a');
+      localStorage.removeItem('cmp_b');
+    }
+    if (!chapters.length) {
+      chapters = [{name: '第一章', a: '', b: ''}];
+      saveChapters();
+    }
+    curChapter = parseInt(localStorage.getItem('cmp_cur') || '0');
+    if (curChapter >= chapters.length) curChapter = 0;
+  } catch(e) {
+    chapters = [{name: '第一章', a: '', b: ''}];
+    curChapter = 0;
+  }
+}
+
+function saveChapters() {
+  try {
+    localStorage.setItem('cmp_chapters', JSON.stringify(chapters));
+    localStorage.setItem('cmp_cur', curChapter);
+  } catch(e) {}
+}
+
+function saveCurrent() {
+  chapters[curChapter].a = edA.innerHTML;
+  chapters[curChapter].b = edB.innerHTML;
+  saveChapters();
+}
+
+function loadCurrent() {
+  var ch = chapters[curChapter];
+  edA.innerHTML = ch.a || '';
+  edB.innerHTML = ch.b || '';
+  updateCounts();
+  updateChapterUI();
+}
+
+function updateChapterUI() {
+  document.getElementById('chName').textContent = chapters[curChapter].name;
+  document.getElementById('chInfo').textContent = (curChapter + 1) + '/' + chapters.length;
+  renderDrawer();
+}
+
 // 自动保存
 var st;
 function autosave() {
   clearTimeout(st);
   st = setTimeout(function() {
-    try {
-      localStorage.setItem('cmp_a', edA.innerHTML);
-      localStorage.setItem('cmp_b', edB.innerHTML);
-    } catch(e) {}
+    chapters[curChapter].a = edA.innerHTML;
+    chapters[curChapter].b = edB.innerHTML;
+    saveChapters();
   }, 500);
 }
 edA.addEventListener('input', autosave);
 edB.addEventListener('input', autosave);
 
-(function() {
-  try {
-    var a = localStorage.getItem('cmp_a');
-    var b = localStorage.getItem('cmp_b');
-    if (a) edA.innerHTML = a;
-    if (b) edB.innerHTML = b;
-    updateCounts();
-  } catch(e) {}
-})();
+// ===== 抽屉逻辑 =====
+var drawerOverlay = document.getElementById('drawerOverlay');
+var drawer = document.getElementById('drawer');
+var drList = document.getElementById('drList');
 
+function openDrawer() {
+  saveCurrent();
+  renderDrawer();
+  drawerOverlay.classList.add('open');
+  drawer.classList.add('open');
+}
+
+function closeDrawer() {
+  drawerOverlay.classList.remove('open');
+  drawer.classList.remove('open');
+}
+
+drawerOverlay.addEventListener('click', closeDrawer);
+document.getElementById('btnDrClose').addEventListener('click', function(e) {
+  e.preventDefault();
+  closeDrawer();
+});
+
+document.getElementById('btnChMenu').addEventListener('click', function(e) {
+  e.preventDefault();
+  openDrawer();
+});
+
+function renderDrawer() {
+  var html = '';
+  for (var i = 0; i < chapters.length; i++) {
+    var cls = (i === curChapter) ? ' dr-item current' : 'dr-item';
+    html += '<div class="' + cls + '" data-idx="' + i + '">';
+    html += '<span class="dr-item-name">' + escHtml(chapters[i].name) + '</span>';
+    if (chapters.length > 1) {
+      html += '<button class="dr-item-del" data-del="' + i + '">✕</button>';
+    }
+    html += '</div>';
+  }
+  drList.innerHTML = html;
+
+  // 点击切换章节
+  Array.from(drList.querySelectorAll('.dr-item')).forEach(function(item) {
+    item.addEventListener('click', function(e) {
+      if (e.target.closest('.dr-item-del')) return;
+      var idx = parseInt(this.getAttribute('data-idx'));
+      if (idx !== curChapter) {
+        saveCurrent();
+        curChapter = idx;
+        loadCurrent();
+        saveChapters();
+      }
+      closeDrawer();
+    });
+  });
+
+  // 删除章节
+  Array.from(drList.querySelectorAll('.dr-item-del')).forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var idx = parseInt(this.getAttribute('data-del'));
+      if (chapters.length <= 1) return;
+      chapters.splice(idx, 1);
+      if (curChapter >= chapters.length) curChapter = chapters.length - 1;
+      saveChapters();
+      loadCurrent();
+      if (drawer.classList.contains('open')) renderDrawer();
+    });
+  });
+}
+
+function escHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// 新建章节
+document.getElementById('btnDrAdd').addEventListener('click', function(e) {
+  e.preventDefault();
+  saveCurrent();
+  var name = '第' + (chapters.length + 1) + '章';
+  chapters.push({name: name, a: '', b: ''});
+  curChapter = chapters.length - 1;
+  saveChapters();
+  loadCurrent();
+  renderDrawer();
+});
+
+// 点击章节名改名
+document.getElementById('chName').addEventListener('click', function() {
+  var name = prompt('章节名称', chapters[curChapter].name);
+  if (name && name.trim()) {
+    chapters[curChapter].name = name.trim();
+    saveChapters();
+    updateChapterUI();
+  }
+});
+
+// ===== 初始化 =====
+loadChapters();
+loadCurrent();
+
+// 清空按钮
 document.getElementById('btnClearA').onclick = function() {
-  edA.innerHTML = ''; updateCounts(); localStorage.setItem('cmp_a', '');
+  edA.innerHTML = ''; updateCounts(); saveCurrent();
 };
 document.getElementById('btnClearB').onclick = function() {
-  edB.innerHTML = ''; updateCounts(); localStorage.setItem('cmp_b', '');
+  edB.innerHTML = ''; updateCounts(); saveCurrent();
 };
 
 // ===== 下拉刷新 =====
@@ -603,7 +929,7 @@ var startY = 0;
 var pullDist = 0;
 
 document.body.addEventListener('touchstart', function(e) {
-  if (e.target.closest('.editor') || e.target.closest('input') || e.target.closest('button')) return;
+  if (e.target.closest('.editor') || e.target.closest('input') || e.target.closest('button') || e.target.closest('.drawer')) return;
   startY = e.touches[0].clientY;
   pulling = true;
 }, {passive: false});
@@ -627,8 +953,7 @@ document.body.addEventListener('touchend', function() {
   if (!pulling) return;
   pulling = false;
   if (pullDist > 60) {
-    localStorage.setItem('cmp_a', edA.innerHTML);
-    localStorage.setItem('cmp_b', edB.innerHTML);
+    saveCurrent();
     window.location.reload();
   }
   pullDist = 0;
@@ -636,6 +961,7 @@ document.body.addEventListener('touchend', function() {
   pullEl.textContent = '下拉刷新';
 });
 </script>
+
 
 </body>
 </html>
