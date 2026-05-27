@@ -330,6 +330,7 @@
   }
   .head .hd-btn:active { background: #eee; color: #888; }
   .head .hd-btn.copied { color: #4caf50; }
+  .head .lock-btn.locked { color: #e55; }
 
   .main.expanded .panel { display: none; }
   .main.expanded .panel.active {
@@ -434,6 +435,7 @@
     <div class="head">
       <span class="label">版本 A</span>
       <span class="count" id="cntA">0 字</span>
+      <button class="hd-btn lock-btn" id="btnLockA" title="锁定/解锁编辑">锁</button>
       <button class="hd-btn" id="btnExpandA" title="展开">□</button>
     </div>
     <div class="editor">
@@ -445,7 +447,8 @@
     <div class="head">
       <span class="label">版本 B</span>
       <span class="count" id="cntB">0 字</span>
-      <button class="hd-btn" id="btnExpandB" title="展开">⤢</button>
+      <button class="hd-btn lock-btn" id="btnLockB" title="锁定/解锁编辑">锁</button>
+      <button class="hd-btn" id="btnExpandB" title="展开">□</button>
     </div>
     <div class="editor">
       <div class="content" id="edB" contenteditable="true"></div>
@@ -697,6 +700,44 @@ document.getElementById('btnExpandA').addEventListener('click', function(e) {
 document.getElementById('btnExpandB').addEventListener('click', function(e) {
   e.preventDefault();
   expand('B');
+});
+
+// ===== 锁定/解锁编辑 =====
+var lockedA = false, lockedB = false;
+var btnLockA = document.getElementById('btnLockA');
+var btnLockB = document.getElementById('btnLockB');
+
+function setLocked(panel, locked) {
+  var ed = panel === 'A' ? edA : edB;
+  var btn = panel === 'A' ? btnLockA : btnLockB;
+  if (locked) {
+    ed.contentEditable = 'false';
+    btn.textContent = '锁';
+    btn.classList.add('locked');
+    // 清除焦点
+    if (activeEditor === ed) {
+      activeEditor = null;
+      panelA.style.boxShadow = 'none';
+      panelB.style.boxShadow = 'none';
+      btnUndo.disabled = true;
+      btnRedo.disabled = true;
+    }
+  } else {
+    ed.contentEditable = 'true';
+    btn.textContent = '✎';
+    btn.classList.remove('locked');
+  }
+}
+
+btnLockA.addEventListener('click', function(e) {
+  e.preventDefault();
+  lockedA = !lockedA;
+  setLocked('A', lockedA);
+});
+btnLockB.addEventListener('click', function(e) {
+  e.preventDefault();
+  lockedB = !lockedB;
+  setLocked('B', lockedB);
 });
 
 // ===== 字数 =====
