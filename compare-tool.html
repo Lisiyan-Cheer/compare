@@ -709,9 +709,15 @@ document.addEventListener('selectionchange', function() {
   }, 80);
 });
 
-// 输入时跟手（除非用户手动翻走了）
-edA.addEventListener('input', function() { setTimeout(scrollCaretToMid, 100); });
-edB.addEventListener('input', function() { setTimeout(scrollCaretToMid, 100); });
+// 输入时跟手：开始打字说明想看光标位置，清除翻看标记
+edA.addEventListener('input', function() {
+  userScrolled = false;
+  setTimeout(scrollCaretToMid, 100);
+});
+edB.addEventListener('input', function() {
+  userScrolled = false;
+  setTimeout(scrollCaretToMid, 100);
+});
 
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', function() {
