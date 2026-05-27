@@ -662,29 +662,60 @@ slLh.addEventListener('input', apply);
 slPs.addEventListener('input', apply);
 apply();
 
-// ===== 光标跟手：键盘弹出时滚动到光标位置 =====
-if (window.visualViewport) {
-  var lastVpHeight = window.visualViewport.height;
-  window.visualViewport.addEventListener('resize', function() {
-    var vh = window.visualViewport.height;
-    // 键盘弹出（视口缩小超过100px）
-    if (lastVpHeight - vh > 100) {
-      setTimeout(function() {
-        if (activeEditor) {
-          var sel = window.getSelection();
-          if (sel.rangeCount && activeEditor.contains(sel.anchorNode)) {
-            var r = sel.getRangeAt(0);
-            var rect = r.getBoundingClientRect();
-            var edRect = activeEditor.parentElement.getBoundingClientRect();
-            // 如果光标在可视区域外，滚动编辑器
-            if (rect.bottom > vh - 40 || rect.top < edRect.top) {
-              activeEditor.parentElement.scrollBy(0, rect.top - edRect.top - 60);
-            }
-          }
-        }
-      }, 300);
+// ===== 光标跟手：始终保持在可视区域中间 =====
+function scrollCaretToMid() {
+  if (!activeEditor) return;
+  var sel = window.getSelection();
+  if (!sel.rangeCount || !activeEditor.contains(sel.anchorNode)) return;
+  var r = sel.getRangeAt(0);
+  // 在光标位置插入零宽字符来获取精确坐标
+  var node = r.startContainer, off = r.startOffset;
+  var caretRect;
+  if (node.nodeType === 3 && off < node.length) {
+    // 取光标后一个字符的位置
+    r.setStart(node, off);
+    r.setEnd(node, Math.min(off + 1, node.length));
+    caretRect = r.getClientRects()[0];
+    r.setStart(node, off);
+    r.collapse(true);
+  }
+  if (!caretRect) {
+    // Fallback：取光标前的字符
+    if (node.nodeType === 3 && off > 0) {
+      r.setStart(node, off - 1);
+      r.setEnd(node, off);
+      caretRect = r.getClientRects()[0];
+      r.setStart(node, off);
+      r.collapse(true);
     }
-    lastVpHeight = vh;
+  }
+  if (!caretRect) {
+    // 最后尝试：用 range 的 bounding rect
+    caretRect = r.getClientRects()[0];
+  }
+  if (!caretRect) return;
+
+  var vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  var targetY = vh * 0.45; // 光标目标在可视区 45% 的位置
+  var caretY = caretRect.top;
+  var diff = caretY - targetY;
+
+  // 只当偏差超过 60px 时才调整，避免频繁微小滚动
+  if (Math.abs(diff) > 60) {
+    activeEditor.parentElement.scrollBy(0, diff);
+  }
+}
+
+// 输入和选区和键盘弹出时都触发
+edA.addEventListener('input', function() { setTimeout(scrollCaretToMid, 50); });
+edB.addEventListener('input', function() { setTimeout(scrollCaretToMid, 50); });
+document.addEventListener('selectionchange', function() {
+  if (activeEditor) scrollCaretToMid();
+});
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', function() {
+    setTimeout(scrollCaretToMid, 200);
   });
 }
 
