@@ -363,7 +363,6 @@ document.addEventListener('click', function(e) {
 btnUndo.addEventListener('click', function(e) {
   e.preventDefault();
   if (activeEditor) {
-    activeEditor.focus();
     document.execCommand('undo');
     updateCounts();
     autosave();
@@ -372,7 +371,6 @@ btnUndo.addEventListener('click', function(e) {
 btnRedo.addEventListener('click', function(e) {
   e.preventDefault();
   if (activeEditor) {
-    activeEditor.focus();
     document.execCommand('redo');
     updateCounts();
     autosave();
