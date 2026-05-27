@@ -363,7 +363,9 @@ document.addEventListener('click', function(e) {
 btnUndo.addEventListener('click', function(e) {
   e.preventDefault();
   if (activeEditor) {
+    var sp = activeEditor.parentElement, st = sp.scrollTop;
     document.execCommand('undo');
+    requestAnimationFrame(function() { sp.scrollTop = st; });
     updateCounts();
     autosave();
   }
@@ -371,7 +373,9 @@ btnUndo.addEventListener('click', function(e) {
 btnRedo.addEventListener('click', function(e) {
   e.preventDefault();
   if (activeEditor) {
+    var sp = activeEditor.parentElement, st = sp.scrollTop;
     document.execCommand('redo');
+    requestAnimationFrame(function() { sp.scrollTop = st; });
     updateCounts();
     autosave();
   }
