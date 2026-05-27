@@ -662,56 +662,76 @@ slLh.addEventListener('input', apply);
 slPs.addEventListener('input', apply);
 apply();
 
-// ===== 光标跟手：始终保持在可视区域中间 =====
+// ===== 光标跟手：始终保持光标在可视区域中间 =====
+var autoScrolling = false;
+var userScrolled = false;
+
 function scrollCaretToMid() {
-  if (!activeEditor) return;
+  if (!activeEditor || userScrolled) return;
   var sel = window.getSelection();
   if (!sel.rangeCount || !activeEditor.contains(sel.anchorNode)) return;
   var r = sel.getRangeAt(0);
-  // 在光标位置插入零宽字符来获取精确坐标
   var node = r.startContainer, off = r.startOffset;
   var caretRect;
   if (node.nodeType === 3 && off < node.length) {
-    // 取光标后一个字符的位置
     r.setStart(node, off);
     r.setEnd(node, Math.min(off + 1, node.length));
     caretRect = r.getClientRects()[0];
     r.setStart(node, off);
     r.collapse(true);
   }
-  if (!caretRect) {
-    // Fallback：取光标前的字符
-    if (node.nodeType === 3 && off > 0) {
-      r.setStart(node, off - 1);
-      r.setEnd(node, off);
-      caretRect = r.getClientRects()[0];
-      r.setStart(node, off);
-      r.collapse(true);
-    }
-  }
-  if (!caretRect) {
-    // 最后尝试：用 range 的 bounding rect
+  if (!caretRect && node.nodeType === 3 && off > 0) {
+    r.setStart(node, off - 1);
+    r.setEnd(node, off);
     caretRect = r.getClientRects()[0];
+    r.setStart(node, off);
+    r.collapse(true);
   }
+  if (!caretRect) caretRect = r.getClientRects()[0];
   if (!caretRect) return;
 
   var vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-  var targetY = vh * 0.45; // 光标目标在可视区 45% 的位置
-  var caretY = caretRect.top;
-  var diff = caretY - targetY;
+  var targetY = vh * 0.45;
+  var diff = caretRect.top - targetY;
 
-  // 只当偏差超过 60px 时才调整，避免频繁微小滚动
   if (Math.abs(diff) > 60) {
+    autoScrolling = true;
     activeEditor.parentElement.scrollBy(0, diff);
+    // 延迟重置标记，等 scroll 事件触发完
+    setTimeout(function() { autoScrolling = false; }, 150);
   }
 }
 
-// 输入和选区和键盘弹出时都触发
-edA.addEventListener('input', function() { setTimeout(scrollCaretToMid, 50); });
-edB.addEventListener('input', function() { setTimeout(scrollCaretToMid, 50); });
-document.addEventListener('selectionchange', function() {
-  if (activeEditor) scrollCaretToMid();
+// 用户手动滚动编辑区时，停止跟手
+edA.parentElement.addEventListener('scroll', function() {
+  if (!autoScrolling) userScrolled = true;
 });
+edB.parentElement.addEventListener('scroll', function() {
+  if (!autoScrolling) userScrolled = true;
+});
+
+// 用户重新放置光标（点击/长按）时恢复跟手
+document.addEventListener('selectionchange', function() {
+  if (activeEditor) {
+    // 只有用户主动点选时才重置标记
+    if (userScrolled) {
+      var sel = window.getSelection();
+      if (sel.rangeCount && activeEditor.contains(sel.anchorNode)) {
+        // 检查选区是否在可视区域内，说明是用户主动操作
+        var r = sel.getRangeAt(0);
+        var rect = r.getClientRects()[0];
+        if (rect) {
+          userScrolled = false;
+        }
+      }
+    }
+    scrollCaretToMid();
+  }
+});
+
+// 输入时跟手（除非用户手动翻走了）
+edA.addEventListener('input', function() { setTimeout(scrollCaretToMid, 100); });
+edB.addEventListener('input', function() { setTimeout(scrollCaretToMid, 100); });
 
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', function() {
