@@ -671,6 +671,8 @@ function scrollCaretToMid() {
   if (!activeEditor || userScrolled || autoScrolling) return;
   var sel = window.getSelection();
   if (!sel.rangeCount || !activeEditor.contains(sel.anchorNode)) return;
+  // 用户正在选中文字时不跟手
+  if (!sel.isCollapsed) return;
   var r = sel.getRangeAt(0);
   var rect = r.getBoundingClientRect();
   if (!rect || rect.top === 0 && rect.left === 0 && rect.width === 0) return;
