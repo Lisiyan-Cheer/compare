@@ -213,6 +213,58 @@
     background: #f5f5f2;
     border-top: 1px solid transparent;
   }
+
+  /* ===== 快捷标点栏 ===== */
+  .punct-bar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    height: 36px;
+    padding: 0 4px;
+    background: #fafaf8;
+    border-top: 1px solid #eee;
+  }
+  .punct-bar .punct-btn {
+    height: 28px;
+    min-width: 36px;
+    padding: 0 4px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    font-size: 15px;
+    color: #666;
+    cursor: pointer;
+    -webkit-appearance: none;
+    touch-action: manipulation;
+    font-family: "PingFang SC", sans-serif;
+  }
+  .punct-bar .punct-btn:active { background: #eee; color: #d97706; }
+
+  /* ===== 写作模式 ===== */
+  .writing-mode .panel { display: none; }
+  .writing-mode .panel.active {
+    display: flex;
+    flex: 1;
+  }
+  .writing-mode .panel .head .label { color: #555; }
+  .writing-mode .panel .head { background: #fafaf8; border-bottom-color: #eee; }
+  .writing-mode .main.expanded .panel.active .head { background: #fafaf8; }
+
+  /* ===== 保存提示 ===== */
+  .save-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #4caf50;
+    transition: opacity 0.4s;
+    vertical-align: middle;
+    margin-right: 2px;
+  }
+  .save-dot.saving { background: #d97706; }
+
   .tuner-panel.open {
     max-height: 80px;
     border-top-color: #eee;
@@ -413,6 +465,7 @@
   <button class="ch-btn" id="btnChMenu">☰</button>
   <span class="ch-name" id="chName">第一章</span>
   <span class="ch-info" id="chInfo">1/1</span>
+  <button class="ch-btn" id="btnMode" title="切换写作/对照模式">≡</button>
 </div>
 
 <div class="main" id="main">
@@ -461,12 +514,22 @@
   </div>
 </div>
 
+<div class="punct-bar" id="punctBar">
+  <button class="punct-btn" data-char="——">——</button>
+  <button class="punct-btn" data-char="……">……</button>
+  <button class="punct-btn" data-char="《》">《》</button>
+  <button class="punct-btn" data-char="""","">""</button>
+  <button class="punct-btn" data-char="、">、</button>
+  <button class="punct-btn" data-char="！">！</button>
+  <button class="punct-btn" data-char="？">？</button>
+</div>
+
 <div class="foot">
   <button class="ft-btn" id="btnUndo" disabled>撤销</button>
   <button class="ft-btn" id="btnRedo" disabled>重做</button>
   <button class="ft-btn" id="btnPaste">粘贴</button>
   <button class="ft-btn" id="gearBtn">设置</button>
-  <span class="info" id="info">共 0 字</span>
+  <span class="info" id="info">共 <span id="totalWC">0</span> 字<span id="saveHint"></span></span>
   <button class="ft-btn" id="btnClearA">清空A</button>
   <button class="ft-btn" id="btnClearB">清空B</button>
 </div>
@@ -648,6 +711,77 @@ slLh.addEventListener('input', apply);
 slPs.addEventListener('input', apply);
 apply();
 
+// ===== 快捷标点 =====
+Array.from(document.querySelectorAll('.punct-btn')).forEach(function(btn) {
+  btn.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    if (!activeEditor) return;
+    var ch = this.getAttribute('data-char');
+    // 对于成对标点《》""，插入后光标放在中间
+    if (ch === '《》' || ch === '“”') {
+      var left = ch.charAt(0), right = ch.charAt(1);
+      document.execCommand('insertText', false, left + right);
+      // 光标左移一格
+      var sel = window.getSelection();
+      if (sel.rangeCount) {
+        var r = sel.getRangeAt(0);
+        r.setStart(r.startContainer, r.startOffset - 1);
+        r.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(r);
+      }
+    } else {
+      document.execCommand('insertText', false, ch);
+    }
+    updateCounts();
+    autosave();
+  });
+});
+
+// ===== 写作模式切换 =====
+var writingMode = false;
+var btnMode = document.getElementById('btnMode');
+btnMode.addEventListener('click', function(e) {
+  e.preventDefault();
+  writingMode = !writingMode;
+  if (writingMode) {
+    document.body.classList.add('writing-mode');
+    panelA.classList.add('writing-active');
+    btnMode.style.color = '#d97706';
+  } else {
+    document.body.classList.remove('writing-mode');
+    panelA.classList.remove('writing-active');
+    btnMode.style.color = '';
+  }
+});
+
+// ===== 光标跟手：键盘弹出时滚动到光标位置 =====
+if (window.visualViewport) {
+  var lastVpHeight = window.visualViewport.height;
+  window.visualViewport.addEventListener('resize', function() {
+    var vh = window.visualViewport.height;
+    // 键盘弹出（视口缩小超过100px）
+    if (lastVpHeight - vh > 100) {
+      setTimeout(function() {
+        if (activeEditor) {
+          var sel = window.getSelection();
+          if (sel.rangeCount && activeEditor.contains(sel.anchorNode)) {
+            var r = sel.getRangeAt(0);
+            var rect = r.getBoundingClientRect();
+            var edRect = activeEditor.parentElement.getBoundingClientRect();
+            // 如果光标在可视区域外，滚动编辑器
+            if (rect.bottom > vh - 40 || rect.top < edRect.top) {
+              activeEditor.parentElement.scrollBy(0, rect.top - edRect.top - 60);
+            }
+          }
+        }
+      }, 300);
+    }
+    lastVpHeight = vh;
+  });
+}
+
+
 // ===== 展开/收起 =====
 var expanded = null;
 
@@ -692,7 +826,7 @@ function updateCounts() {
   var cb = wc(edB.textContent);
   cntA.textContent = ca + ' 字';
   cntB.textContent = cb + ' 字';
-  info.textContent = '共 ' + (ca + cb) + ' 字';
+  document.getElementById('totalWC').textContent = ca + cb;
 }
 edA.addEventListener('input', updateCounts);
 edB.addEventListener('input', updateCounts);
@@ -802,12 +936,18 @@ function updateChapterUI() {
 
 // 自动保存
 var st;
+var saveTimer = null;
 function autosave() {
   clearTimeout(st);
+  var hint = document.getElementById('saveHint');
+  hint.innerHTML = '<span class="save-dot saving"></span>';
   st = setTimeout(function() {
     chapters[curChapter].a = edA.innerHTML;
     chapters[curChapter].b = edB.innerHTML;
     saveChapters();
+    clearTimeout(saveTimer);
+    hint.innerHTML = '<span class="save-dot"></span>';
+    saveTimer = setTimeout(function() { hint.innerHTML = ''; }, 2000);
   }, 500);
 }
 edA.addEventListener('input', autosave);
@@ -845,8 +985,10 @@ function renderDrawer() {
   var html = '';
   for (var i = 0; i < chapters.length; i++) {
     var cls = (i === curChapter) ? ' dr-item current' : 'dr-item';
+    var chWc = wc((chapters[i].a || '') + (chapters[i].b || ''));
     html += '<div class="' + cls + '" data-idx="' + i + '">';
     html += '<span class="dr-item-name">' + escHtml(chapters[i].name) + '</span>';
+    html += '<span style="font-size:11px;color:#bbb;flex-shrink:0;margin-right:4px">' + chWc + '字</span>';
     if (chapters.length > 1) {
       html += '<button class="dr-item-del" data-del="' + i + '">✕</button>';
     }
